@@ -1,19 +1,12 @@
 import createDataContext from "./createDataContext";
+import jsonServer from "../api/jsonServer";
 
-const INITIAL_STATE = [{ title: "My post", content: "This is my post", id: 1 }];
-
+// Reducer
 const reducer = (state, action) => {
   const { type, payload } = action;
   switch (type) {
     case "ADD_POST":
-      return [
-        ...state,
-        {
-          title: payload.title,
-          content: payload.content,
-          id: Math.floor(Math.random() * 99999),
-        },
-      ];
+      return [...state, payload];
     case "DELETE_POST":
       return state.filter((post) => post.id !== payload);
     case "EDIT_POST":
@@ -21,32 +14,65 @@ const reducer = (state, action) => {
       return state.map((post) =>
         post.id === id ? { id, title, content } : post
       );
+    case "LIST_POSTS":
+      return payload;
     default:
       return state;
   }
 };
 
-const addBlogPost = (dispatch) => (title, content, navigateCallback) => {
-  dispatch({ type: "ADD_POST", payload: { title, content } });
-
-  if (navigateCallback) {
-    navigateCallback();
+// Actions
+const addBlogPost = (dispatch) => async (title, content, navigateCallback) => {
+  try {
+    const res = await jsonServer.post("/blogPosts", { title, content });
+    dispatch({ type: "ADD_POST", payload: res.data });
+    if (navigateCallback) {
+      navigateCallback();
+    }
+  } catch (error) {
+    console.error(error);
   }
 };
 
-const deleteBlogPost = (dispatch) => (id) => {
-  dispatch({ type: "DELETE_POST", payload: id });
-};
-const editBlogPost = (dispatch) => (id, title, content, navigateCallback) => {
-  dispatch({ type: "EDIT_POST", payload: { id, title, content } });
-
-  if (navigateCallback) {
-    navigateCallback();
+const deleteBlogPost = (dispatch) => async (id) => {
+  try {
+    await jsonServer.delete(`/blogPosts/${id}`);
+    dispatch({ type: "DELETE_POST", payload: id });
+  } catch (error) {
+    console.error(error);
   }
 };
+
+const editBlogPost = (dispatch) => async (
+  id,
+  title,
+  content,
+  navigateCallback
+) => {
+  try {
+    const res = await jsonServer.put(`/blogPosts/${id}`, { title, content });
+    dispatch({ type: "EDIT_POST", payload: { id, ...res.data } });
+    if (navigateCallback) {
+      navigateCallback();
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const listBlogPosts = (dispatch) => async () => {
+  try {
+    const res = await jsonServer.get("/blogposts");
+    dispatch({ type: "LIST_POSTS", payload: res.data });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const INITIAL_STATE = [];
 
 export const { Context, Provider } = createDataContext(
   reducer,
-  { addBlogPost, deleteBlogPost, editBlogPost },
+  { addBlogPost, deleteBlogPost, editBlogPost, listBlogPosts },
   INITIAL_STATE
 );

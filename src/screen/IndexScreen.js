@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,20 @@ import { Feather } from "@expo/vector-icons";
 import { Context } from "../context/BlogContext";
 
 const IndexScreen = ({ navigation }) => {
-  const { state, addBlogPost, deleteBlogPost } = useContext(Context);
+  const { state, listBlogPosts, deleteBlogPost } = useContext(Context);
+
+  useEffect(() => {
+    listBlogPosts();
+
+    // Runs anytime return to this screen
+    const listener = navigation.addListener("didFocus", () => {
+      listBlogPosts();
+    });
+
+    return () => {
+      listener.remove();
+    };
+  }, []);
 
   // Add a (+) button on navigation header
   navigation.setOptions({
